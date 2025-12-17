@@ -1,12 +1,21 @@
+const express = require("express");
+const app = express();
+
 app.use(express.json());
 
-let orders = {}; // 임시 주문 저장소
+// ✅ 기본 확인용
+app.get("/", (req, res) => {
+  res.send("Welcome");
+});
+
+// ✅ 주문 생성 API
+let orders = {};
 
 app.post("/order", (req, res) => {
   const { amount } = req.body;
 
-  const orderId = Date.now().toString(); // 주문 ID
-  const virtualAccount = "123-456-789012"; // 가짜 가상계좌
+  const orderId = Date.now().toString();
+  const virtualAccount = "123-456-789012";
 
   orders[orderId] = {
     amount,
@@ -19,3 +28,10 @@ app.post("/order", (req, res) => {
     amount
   });
 });
+
+// ✅ Render용 포트 설정 (중요)
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log("Server running on port", PORT);
+});
+
