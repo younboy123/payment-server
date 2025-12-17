@@ -3,19 +3,23 @@ const app = express();
 
 app.use(express.json());
 
-// ✅ 기본 확인용
-app.get("/", (req, res) => {
-  res.send("Welcome");
-});
-
-// ✅ 주문 생성 API
+// ==========================
+// 주문 저장소 (임시 DB)
+// ==========================
 let orders = {};
 
+// ==========================
+// 1. 주문 생성 (가상계좌 발급)
+// ==========================
 app.post("/order", (req, res) => {
   const { amount } = req.body;
 
+  if (!amount) {
+    return res.status(400).json({ error: "amount required" });
+  }
+
   const orderId = Date.now().toString();
-  const virtualAccount = "123-456-789012";
+  const virtualAccount = "123-456-789012"; // 가짜 계좌
 
   orders[orderId] = {
     amount,
@@ -25,13 +29,15 @@ app.post("/order", (req, res) => {
   res.json({
     orderId,
     account: virtualAccount,
-    amount
+    amount,
+    status: "WAITING_PAYMENT"
   });
 });
 
-// ✅ Render용 포트 설정 (중요)
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
-});
+// ==========================
+// 2. 입금 확인 (PG 콜백 흉내)
+// ==========================
+app.post("/deposit", (req, res) => {
+  const { orderId, amount } = req.body;
 
+  const order = orders[orderId];
