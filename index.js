@@ -2,60 +2,66 @@
 const express = require("express");
 const app = express();
 
-// JSON body 파싱
 app.use(express.json());
 
-// 임시 메모리 DB
+// ==========================
+// 임시 주문 저장소 (메모리)
+// ==========================
 const orders = {};
 
-// 🔹 서버 상태 확인용 (중요)
-app.get("/", (req, res) => {
-  res.send("Server is running");
-});
-
-// 1️⃣ 주문 생성
+// ==========================
+// 1️⃣ 주문 생성 (가상계좌 발급)
 // POST /order
-// body: { "amount": 10000 }
+// ==========================
 app.post("/order", (req, res) => {
-  const amount = req.body.amount;
+  const { amount } = req.body;
 
-  if (amount === undefined) {
+  if (!amount) {
     return res.status(400).json({ error: "amount required" });
   }
 
+  // 주문 ID 생성
   const orderId = Date.now().toString();
 
+  // 테스트용 가상계좌
+  const account = "123-456-789012";
+
+  // 주문 저장
   orders[orderId] = {
-    amount: Number(amount),
+    orderId,
+    amount,
+    account,
     status: "WAITING_PAYMENT",
   };
 
+  // 응답 (account 반드시 포함)
   res.json({
     orderId,
-    amount: Number(amount),
+    account,
+    amount,
     status: "WAITING_PAYMENT",
   });
 });
 
-// 2️⃣ 입금 처리
+// ==========================
+// 2️⃣ 입금 확인 (PG 콜백 흉내)
 // POST /deposit
-// body: { "orderId": "xxxx", "amount": 10000 }
+// ==========================
 app.post("/deposit", (req, res) => {
   const { orderId, amount } = req.body;
 
   if (!orderId || amount === undefined) {
-    return res.status(400).json({
-      error: "orderId and amount required",
-    });
+    return res
+      .status(400)
+      .json({ error: "orderId and amount required" });
   }
 
   const order = orders[orderId];
-
   if (!order) {
     return res.status(404).json({ error: "order not found" });
   }
 
-  if (order.amount !== Number(amount)) {
+  if (order.amount !== amount) {
     order.status = "FAILED";
     return res.json({
       status: "FAILED",
@@ -70,11 +76,12 @@ app.post("/deposit", (req, res) => {
   });
 });
 
+// ==========================
 // 3️⃣ 주문 상태 조회
 // GET /order/:id
+// ==========================
 app.get("/order/:id", (req, res) => {
   const order = orders[req.params.id];
-
   if (!order) {
     return res.status(404).json({ error: "order not found" });
   }
@@ -82,11 +89,12 @@ app.get("/order/:id", (req, res) => {
   res.json(order);
 });
 
-// 서버 실행
+// ==========================
+// 서버 시작
+// ==========================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+  console.log(`Server running on port ${PORT}`);
 });
-
 
 
